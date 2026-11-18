@@ -8,6 +8,8 @@ export type MissionPriority = 'high' | 'medium' | 'low';
 
 export interface UserProfile {
   uid: string;
+  // Docteur de propriete: exigence des regles Firestore (ownerId == uid).
+  ownerId: string;
   email: string;
   displayName: string;
   language: Language;
