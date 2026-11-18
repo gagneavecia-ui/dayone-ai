@@ -59,6 +59,8 @@ export default function RegisterPage() {
       if (db) {
         const profile: Omit<UserProfile, 'uid'> & { uid: string } = {
           uid: user.uid,
+          // Obligatoire: les regles Firestore exigent ownerId == uid pour la creation.
+          ownerId: user.uid,
           email: user.email ?? email.trim(),
           displayName: displayName.trim(),
           language: lang,
