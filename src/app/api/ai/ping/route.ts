@@ -29,17 +29,13 @@ export async function GET(req: Request) {
   if (!expected) return jsonError(404, 'not_found');
   if (req.headers.get('x-ping-token') !== expected) return jsonError(404, 'not_found');
 
-  const groqModels = await fetch('https://api.groq.com/openai/v1/models', {
-    headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY || ''}` },
-  }).then(async (res) => ({ status: res.status, models: res.ok ? (await res.json()).data?.map((m: { id: string }) => m.id) : await res.text() })).catch((e) => ({ status: 0, models: String(e) }));
-
   const results = await Promise.all([
     testProvider('groq', async (key) => {
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: process.env.AI_GROQ_MODEL || 'openai/gpt-oss-120b',
           messages: [{ role: 'user', content: 'Reply with the single word: OK' }],
           max_tokens: 8,
         }),
@@ -68,7 +64,7 @@ export async function GET(req: Request) {
     }),
   ]);
 
-  return Response.json({ groqModels, results, configured: providerStatus() });
+  return Response.json({ results, configured: providerStatus() });
 }
 
 export const runtime = 'nodejs';

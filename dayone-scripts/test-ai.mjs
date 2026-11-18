@@ -12,7 +12,7 @@ const tests = [
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
         body: JSON.stringify({
-          model: process.env.AI_GROQ_MODEL || 'llama-3.3-70b-versatile',
+          model: process.env.AI_GROQ_MODEL || 'openai/gpt-oss-120b',
           messages: [{ role: 'user', content: 'Reply with the single word: OK' }],
           max_tokens: 8,
         }),

@@ -45,7 +45,7 @@ const PROVIDER_ORDER: ProviderName[] = ['groq', 'gemini', 'openrouter'];
 function modelFor(name: ProviderName): string {
   switch (name) {
     case 'groq':
-      return process.env.AI_GROQ_MODEL || 'llama-3.3-70b-versatile';
+      return process.env.AI_GROQ_MODEL || 'openai/gpt-oss-120b';
     case 'gemini':
       return process.env.AI_GEMINI_MODEL || 'gemini-3.8-flash';
     case 'openrouter':
