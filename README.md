@@ -53,7 +53,8 @@ src/
 ├─ middleware.ts           # Protection UX des routes privées
 └─ types/
 firestore.rules            # Règles de sécurité strictes
-firestore.indexes.json     # Index composites
+firestore.indexes.json     # Index composites (OPTIONNELS : toutes les requêtes
+                           # de l'app fonctionnent sans — filtrage en mémoire)
 dayone-scripts/            # set-admin.mjs, test-ai.mjs
 docs/                      # SETUP-FIREBASE.md, ARCHITECTURE.md
 ```
@@ -94,7 +95,7 @@ Chaque moteur (Mission, Coach, Review) impose un contrat JSON validé par Zod, a
 
 ## Déploiement
 
-1. Configurer Firebase → `docs/SETUP-FIREBASE.md` (règles + index inclus dans le dépôt).
+1. Configurer Firebase → `docs/SETUP-FIREBASE.md` (règles incluses dans le dépôt ; les index composites sont optionnels, toutes les requêtes de l'app fonctionnent sans).
 2. Connecter le dépôt GitHub à Vercel (framework Next.js détecté automatiquement).
 3. Ajouter les variables d'environnement (Firebase + clés IA) puis déployer.
 4. `/api/health` doit répondre `{ "firebaseClient": true, "firebaseAdmin": true, ... }`.
