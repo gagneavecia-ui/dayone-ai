@@ -54,19 +54,12 @@ export async function POST(req: Request) {
     }
 
     // Context: goals, today's missions, last review.
-    const goalsSnap = await db
-      .collection('goals')
-      .where('ownerId', '==', uid)
-      .where('status', '==', 'active')
-      .get();
-    const goals = goalsSnap.docs.map((d) => d.data() as Goal);
+    // Single-field queries + in-memory filtering (no composite indexes needed).
+    const goalsSnap = await db.collection('goals').where('ownerId', '==', uid).get();
+    const goals = goalsSnap.docs.map((d) => (d.data() as Goal)).filter((g) => g.status === 'active');
 
-    const missionsSnap = await db
-      .collection('missions')
-      .where('ownerId', '==', uid)
-      .where('date', '==', date)
-      .get();
-    const missions = missionsSnap.docs.map((d) => d.data() as Mission);
+    const missionsSnap = await db.collection('missions').where('ownerId', '==', uid).get();
+    const missions = missionsSnap.docs.map((d) => d.data() as Mission).filter((m) => m.date === date);
 
     const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
     const reviewSnap = await db.collection('dailyReviews').doc(`${uid}_${yesterday}`).get();

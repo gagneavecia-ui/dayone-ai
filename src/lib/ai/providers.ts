@@ -49,7 +49,8 @@ function modelFor(name: ProviderName): string {
     case 'gemini':
       return process.env.AI_GEMINI_MODEL || 'gemini-3.8-flash';
     case 'openrouter':
-      return process.env.AI_OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct';
+      // Free-tier friendly default (zero-credit accounts): direct-output chat model.
+      return process.env.AI_OPENROUTER_MODEL || 'particle-ai/particle-1:free';
   }
 }
 

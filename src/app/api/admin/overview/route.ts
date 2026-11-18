@@ -26,7 +26,7 @@ export async function GET(req: Request) {
         const [users, goals, missionsToday] = await Promise.all([
           db.collection('users').count().get(),
           db.collection('goals').where('status', '==', 'active').count().get(),
-          db.collection('missions').where('status', '==', 'done').where('date', '==', localDateFor('UTC')).count().get(),
+          db.collection('missions').where('date', '==', localDateFor('UTC')).count().get(),
         ]);
         const usageDoc = await db.collection('globalMetrics').doc('aiUsage').get();
         const days = (usageDoc.data()?.days as Record<string, { coach: number; missions: number }> | undefined) ?? {};
@@ -68,12 +68,12 @@ export async function GET(req: Request) {
         const cutoff = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
         const snap = await db
           .collection('missions')
-          .where('status', '==', 'done')
           .where('date', '>=', cutoff)
           .get();
         const perDate: Record<string, number> = {};
         for (const d of snap.docs) {
           const m = d.data() as Mission;
+          if (m.status !== 'done') continue;
           perDate[m.date] = (perDate[m.date] ?? 0) + 1;
         }
         const series = Object.entries(perDate)

@@ -56,19 +56,12 @@ export async function POST(req: Request) {
       return jsonError(409, 'review_exists', 'A review for today already exists.');
     }
 
-    const missionsSnap = await db
-      .collection('missions')
-      .where('ownerId', '==', uid)
-      .where('date', '==', date)
-      .get();
-    const missions = missionsSnap.docs.map((d) => d.data() as Mission);
+    // Single-field queries + in-memory filtering (no composite indexes needed).
+    const missionsSnap = await db.collection('missions').where('ownerId', '==', uid).get();
+    const missions = missionsSnap.docs.map((d) => d.data() as Mission).filter((m) => m.date === date);
 
-    const goalsSnap = await db
-      .collection('goals')
-      .where('ownerId', '==', uid)
-      .where('status', '==', 'active')
-      .get();
-    const goals = goalsSnap.docs.map((d) => d.data() as Goal);
+    const goalsSnap = await db.collection('goals').where('ownerId', '==', uid).get();
+    const goals = goalsSnap.docs.map((d) => d.data() as Goal).filter((g) => g.status === 'active');
 
     const insights = await reviewInsights({
       displayName: profile.displayName || auth.ctx.email,

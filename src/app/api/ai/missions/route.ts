@@ -34,13 +34,11 @@ export async function POST(req: Request) {
     const db = getAdminDb();
     if (!db) return jsonError(503, 'firebase_not_configured');
 
-    const goalsSnap = await db
-      .collection('goals')
-      .where('ownerId', '==', uid)
-      .where('status', '==', 'active')
-      .get();
+    // Single-field queries + in-memory filtering (no composite indexes needed).
+    const goalsSnap = await db.collection('goals').where('ownerId', '==', uid).get();
     const goals = goalsSnap.docs
       .map((d) => ({ ...(d.data() as Goal), id: d.id }))
+      .filter((g) => g.status === 'active')
       .sort((a, b) => a.progress - b.progress);
 
     if (goals.length === 0) {
@@ -50,14 +48,10 @@ export async function POST(req: Request) {
 
     // Recent missions to avoid repetition.
     const since = new Date(Date.now() - 4 * 86_400_000).toISOString().slice(0, 10);
-    const recentSnap = await db
-      .collection('missions')
-      .where('ownerId', '==', uid)
-      .where('date', '>=', since)
-      .get();
+    const recentSnap = await db.collection('missions').where('ownerId', '==', uid).get();
     const recentMissions = recentSnap.docs
       .map((d) => d.data() as Mission)
-      .filter((m) => m.date !== date)
+      .filter((m) => m.date >= since && m.date !== date)
       .map((m) => ({ title: m.title, date: m.date, status: m.status }));
 
     const drafts = await generateDailyMissions({
@@ -78,14 +72,10 @@ export async function POST(req: Request) {
     });
 
     // Replace today's pending missions; completed ones are preserved.
-    const todaySnap = await db
-      .collection('missions')
-      .where('ownerId', '==', uid)
-      .where('date', '==', date)
-      .get();
+    const todaySnap = await db.collection('missions').where('ownerId', '==', uid).get();
     const toDelete = todaySnap.docs.filter((d) => {
       const m = d.data() as Mission;
-      return m.status !== 'done';
+      return m.date === date && m.status !== 'done';
     });
     for (const d of toDelete) {
       await d.ref.delete();
