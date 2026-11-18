@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DAYONE AI — Offline</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #09090b;
+        color: #f4f4f5;
+        font-family: system-ui, -apple-system, sans-serif;
+        text-align: center;
+        padding: 24px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 6px 14px;
+        border: 1px solid rgba(139, 92, 246, 0.5);
+        border-radius: 999px;
+        color: #a78bfa;
+        font-size: 13px;
+        letter-spacing: 0.12em;
+        margin-bottom: 20px;
+      }
+      h1 { font-size: 26px; margin: 0 0 10px; }
+      p { color: #a1a1aa; max-width: 420px; margin: 0 auto 24px; line-height: 1.6; }
+      button {
+        background: #8b5cf6;
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 24px;
+        font-size: 15px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="badge">PLAN · ACT · PROGRESS</div>
+      <h1>You are offline</h1>
+      <p>
+        Already loaded pages can be read offline. Missions generation and the AI coach need a
+        connection — they will be back as soon as you are.
+      </p>
+      <button onclick="window.location.reload()">Try again</button>
+    </main>
+  </body>
+</html>
