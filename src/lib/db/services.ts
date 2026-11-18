@@ -44,15 +44,21 @@ export async function saveUserProfile(uid: string, data: Partial<UserProfile>): 
 
 /* -------------------------------- Goals -------------------------------- */
 
+/**
+ * Single-field query by design: composite indexes are not required for this
+ * app to work (a user has a handful of goals, so filtering/sorting in memory
+ * is both cheaper and more resilient than depending on manual index setup).
+ */
 export function subscribeGoals(uid: string, status: 'active' | 'archived', cb: (goals: Goal[]) => void): Unsubscribe {
   const db = getFirestoreDb()!;
-  const q = query(
-    collection(db, 'goals'),
-    where('ownerId', '==', uid),
-    where('status', '==', status),
-    orderBy('createdAt', 'desc'),
-  );
-  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Goal), id: d.id }))));
+  const q = query(collection(db, 'goals'), where('ownerId', '==', uid));
+  return onSnapshot(q, (snap) => {
+    const goals = snap.docs
+      .map((d) => ({ ...(d.data() as Goal), id: d.id }))
+      .filter((g) => g.status === status)
+      .sort((a, b) => b.createdAt - a.createdAt);
+    cb(goals);
+  });
 }
 
 export interface GoalInput {
@@ -103,22 +109,24 @@ export async function deleteGoal(goalId: string): Promise<void> {
 
 export async function countActiveGoals(uid: string): Promise<number> {
   const db = getFirestoreDb()!;
-  const q = query(collection(db, 'goals'), where('ownerId', '==', uid), where('status', '==', 'active'));
+  const q = query(collection(db, 'goals'), where('ownerId', '==', uid));
   const snap = await getDocs(q);
-  return snap.size;
+  return snap.docs.filter((d) => (d.data() as Goal).status === 'active').length;
 }
 
 /* ------------------------------- Missions ------------------------------ */
 
+/** Single-field query (no composite index needed) + in-memory date filter. */
 export function subscribeMissionsForDate(uid: string, date: string, cb: (missions: Mission[]) => void): Unsubscribe {
   const db = getFirestoreDb()!;
-  const q = query(
-    collection(db, 'missions'),
-    where('ownerId', '==', uid),
-    where('date', '==', date),
-    orderBy('createdAt', 'asc'),
-  );
-  return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Mission), id: d.id }))));
+  const q = query(collection(db, 'missions'), where('ownerId', '==', uid));
+  return onSnapshot(q, (snap) => {
+    const missions = snap.docs
+      .map((d) => ({ ...(d.data() as Mission), id: d.id }))
+      .filter((m) => m.date === date)
+      .sort((a, b) => a.createdAt - b.createdAt);
+    cb(missions);
+  });
 }
 
 export async function updateMissionStatus(missionId: string, status: MissionStatus): Promise<void> {
@@ -135,15 +143,14 @@ export interface MissionHistoryItem {
 
 export async function fetchMissionsSince(uid: string, sinceDate: string, maxDays: number): Promise<Mission[]> {
   const db = getFirestoreDb()!;
-  const q = query(
-    collection(db, 'missions'),
-    where('ownerId', '==', uid),
-    where('date', '>=', sinceDate),
-    orderBy('date', 'desc'),
-    limit(maxDays * 6),
-  );
+  // Single-field query + in-memory filtering (composite-index free).
+  const q = query(collection(db, 'missions'), where('ownerId', '==', uid), limit(400));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ ...(d.data() as Mission), id: d.id }));
+  return snap.docs
+    .map((d) => ({ ...(d.data() as Mission), id: d.id }))
+    .filter((m) => m.date >= sinceDate)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, maxDays * 6);
 }
 
 export async function saveDailyPlan(uid: string, date: string, missionIds: string[]): Promise<void> {
@@ -210,11 +217,13 @@ export async function addMessage(conversationId: string, role: 'user' | 'assista
 
 export async function fetchConversation(uid: string): Promise<Conversation | null> {
   const db = getFirestoreDb()!;
-  const q = query(collection(db, 'conversations'), where('ownerId', '==', uid), orderBy('updatedAt', 'desc'), limit(1));
+  const q = query(collection(db, 'conversations'), where('ownerId', '==', uid));
   const snap = await getDocs(q);
   if (snap.empty) return null;
-  const d = snap.docs[0];
-  return { ...(d.data() as Conversation), id: d.id };
+  const latest = snap.docs
+    .map((d) => ({ ...(d.data() as Conversation), id: d.id }))
+    .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+  return latest;
 }
 
 /* --------------------------------- Usage -------------------------------- */
