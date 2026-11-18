@@ -25,101 +25,101 @@ service cloud.firestore {
 
     // ----------------------------- Users -----------------------------
     match /users/{userId} {
-      allow get: isSignedIn() && request.auth.uid == userId;
-      allow list: false; // No client-side listing of users.
-      allow create: isOwnerField(userId);
-      allow update: request.auth.uid == userId
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if false; // No client-side listing of users.
+      allow create: if isOwnerField(userId);
+      allow update: if request.auth.uid == userId
         // Plan escalations can never come from the client.
         && (!request.resource.data.diff(resource.data).affectedKeys()
               .hasAny(['plan']));
-      allow delete: request.auth.uid == userId;
+      allow delete: if request.auth.uid == userId;
 
       // Daily usage counters (readable by the owner, written by server/client).
       match /usage/{date} {
-        allow read, write: request.auth != null && request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
       // Subscription record: readable by the owner, only writable by backend.
       match /subscription/{docId} {
-        allow read: request.auth != null && request.auth.uid == userId;
-        allow write: false;
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
       }
     }
 
     // ----------------------------- Goals -----------------------------
     match /goals/{goalId} {
-      allow read: isOwnerDoc(request.auth.uid);
-      allow create: isOwnerField(request.auth.uid)
+      allow read: if isOwnerDoc(request.auth.uid);
+      allow create: if isOwnerField(request.auth.uid)
         && request.resource.data.status in ['active', 'archived'];
-      allow update, delete: isOwnerDoc(request.auth.uid);
+      allow update, delete: if isOwnerDoc(request.auth.uid);
     }
 
     // ---------------------------- Missions ---------------------------
     match /missions/{missionId} {
-      allow read: isOwnerDoc(request.auth.uid);
-      allow create: isOwnerField(request.auth.uid)
+      allow read: if isOwnerDoc(request.auth.uid);
+      allow create: if isOwnerField(request.auth.uid)
         && request.resource.data.status in ['todo', 'in_progress', 'done', 'postponed'];
-      allow update, delete: isOwnerDoc(request.auth.uid);
+      allow update, delete: if isOwnerDoc(request.auth.uid);
     }
 
     // --------------------------- Daily plans -------------------------
     match /dailyPlans/{planId} {
-      allow read: isOwnerDoc(request.auth.uid);
-      allow create, update: isOwnerField(request.auth.uid);
-      allow delete: isOwnerDoc(request.auth.uid);
+      allow read: if isOwnerDoc(request.auth.uid);
+      allow create, update: if isOwnerField(request.auth.uid);
+      allow delete: if isOwnerDoc(request.auth.uid);
     }
 
     // ------------------------ Daily reviews --------------------------
     match /dailyReviews/{reviewId} {
-      allow read: isOwnerDoc(request.auth.uid);
-      allow create, update: isOwnerField(request.auth.uid);
-      allow delete: isOwnerDoc(request.auth.uid);
+      allow read: if isOwnerDoc(request.auth.uid);
+      allow create, update: if isOwnerField(request.auth.uid);
+      allow delete: if isOwnerDoc(request.auth.uid);
     }
 
     // ------------------------- Conversations -------------------------
     match /conversations/{conversationId} {
-      allow read, update, delete: isOwnerDoc(request.auth.uid);
-      allow create: isOwnerField(request.auth.uid);
+      allow read, update, delete: if isOwnerDoc(request.auth.uid);
+      allow create: if isOwnerField(request.auth.uid);
 
       match /messages/{messageId} {
         function conversationOwner() {
           return get(/databases/$(database)/documents/conversations/$(conversationId)).data.ownerId;
         }
-        allow read, create, delete: isSignedIn() && conversationOwner() == request.auth.uid;
+        allow read, create, delete: if isSignedIn() && conversationOwner() == request.auth.uid;
       }
     }
 
     // --------------------------- Feedback ----------------------------
     match /feedbacks/{feedbackId} {
-      allow read: isAdmin();
-      allow create: isOwnerField(request.auth.uid);
-      allow update, delete: false;
+      allow read: if isAdmin();
+      allow create: if isOwnerField(request.auth.uid);
+      allow update, delete: if false;
     }
 
     // ------------------------- Administration ------------------------
     match /adminUsers/{adminId} {
-      allow read: isAdmin() || (isSignedIn() && request.auth.uid == adminId);
-      allow write: false; // Admins are managed with the Admin SDK scripts only.
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == adminId);
+      allow write: if false; // Admins are managed with the Admin SDK scripts only.
     }
 
     match /systemConfig/{configId} {
-      allow read: isSignedIn();
-      allow write: false; // Only the backend writes configuration, with audit.
+      allow read: if isSignedIn();
+      allow write: if false; // Only the backend writes configuration, with audit.
     }
 
     match /globalMetrics/{metricId} {
-      allow read: isAdmin();
-      allow write: false; // Written exclusively by server routes.
+      allow read: if isAdmin();
+      allow write: if false; // Written exclusively by server routes.
     }
 
     match /auditLogs/{logId} {
-      allow read: isAdmin();
-      allow write: false; // Server-only, tamper-resistant.
+      allow read: if isAdmin();
+      allow write: if false; // Server-only, tamper-resistant.
     }
 
     // --------------------------- Deny all ----------------------------
     match /{document=**} {
-      allow read, write: false;
+      allow read, write: if false;
     }
   }
 }
